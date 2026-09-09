@@ -4,7 +4,8 @@ from .views import (
     RegisterView,
     VerifyOTPView,
     ResendOTPView,
-    LoginView
+    LoginView,
+    UserProfileView
 )
 
 
@@ -32,6 +33,12 @@ urlpatterns = [
         "login/",
         LoginView.as_view(),
         name="login"
+    ),
+
+    path(
+        "me/",
+        UserProfileView.as_view(),
+        name="user-profile"
     ),
 
 ]

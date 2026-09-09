@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 
-from rest_framework import status
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -8,13 +8,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from drf_spectacular.utils import extend_schema
 
-from .otp import create_otp, verify_otp
+from .otp import verify_otp
 
 from .serializers import (
     RegisterSerializer,
     VerifyOTPSerializer,
     ResendOTPSerializer,
-    LoginSerializer
+    LoginSerializer,
+    UserProfileSerializer
 )
 
 
@@ -44,25 +45,6 @@ class RegisterView(APIView):
 
         user = serializer.save()
 
-        try:
-            otp = create_otp(user)
-
-        except ValueError as error:
-
-            return Response(
-                {
-                    "success": False,
-                    "message": str(error)
-                },
-                status=status.HTTP_429_TOO_MANY_REQUESTS
-            )
-
-        # Temporary development testing.
-        # In production, replace this with an SMS service.
-        print(
-            f"OTP for {user.phone_number}: {otp}"
-        )
-
         return Response(
             {
                 "success": True,
@@ -77,6 +59,9 @@ class RegisterView(APIView):
                     "first_name": user.first_name,
                     "last_name": user.last_name,
                     "phone_number": user.phone_number,
+                    "gender": user.gender,
+                    "date_of_birth": user.date_of_birth,
+                    "location": user.location,
                     "role": user.role
                 }
             },
@@ -215,6 +200,7 @@ class ResendOTPView(APIView):
 
         try:
 
+            from .otp import create_otp
             otp = create_otp(user)
 
         except ValueError as error:
@@ -227,8 +213,6 @@ class ResendOTPView(APIView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS
             )
 
-        # Temporary development testing.
-        # In production, replace this with an SMS service.
         print(
             f"OTP for {user.phone_number}: {otp}"
         )
@@ -284,6 +268,9 @@ class LoginView(APIView):
                     "first_name": user.first_name,
                     "last_name": user.last_name,
                     "phone_number": user.phone_number,
+                    "gender": user.gender,
+                    "date_of_birth": user.date_of_birth,
+                    "location": user.location,
                     "role": user.role
                 },
                 "tokens": {
@@ -295,3 +282,19 @@ class LoginView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+# ============================================================
+# USER PROFILE
+# ============================================================
+
+@extend_schema(
+    responses=UserProfileSerializer,
+    tags=["User Profile"]
+)
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user

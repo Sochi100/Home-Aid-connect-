@@ -1,8 +1,7 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
 from .otp import create_otp
-
 
 User = get_user_model()
 
@@ -30,6 +29,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             "last_name",
             "phone_number",
             "role",
+            "gender",
+            "location",
+            "date_of_birth",
         ]
 
     def validate_first_name(self, value):
@@ -108,13 +110,12 @@ class RegisterSerializer(serializers.ModelSerializer):
             **validated_data
         )
 
-        # Generate OTP
         otp = create_otp(user)
 
-        # Temporary: we'll send this through SMS later
         print(f"OTP for {user.phone_number}: {otp}")
 
         return user
+
 
 class VerifyOTPSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
@@ -130,6 +131,7 @@ class VerifyOTPSerializer(serializers.Serializer):
             )
 
         return value
+
 
 class ResendOTPSerializer(serializers.Serializer):
     phone_number = serializers.CharField()
@@ -151,8 +153,6 @@ class ResendOTPSerializer(serializers.Serializer):
             )
 
         return value
-from django.contrib.auth import authenticate
-from rest_framework import serializers
 
 
 class LoginSerializer(serializers.Serializer):
@@ -184,3 +184,22 @@ class LoginSerializer(serializers.Serializer):
         attrs["user"] = user
 
         return attrs
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'phone_number',
+            'gender',
+            'date_of_birth',
+            'location',
+            'role',
+            'phone_verified',
+        ]
+        read_only_fields = ['id', 'username', 'role', 'phone_verified']

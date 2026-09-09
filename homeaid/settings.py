@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     'services',
     'providers',
     'bookings',
+    'sos',
+    'chat'
 ]
 
 
