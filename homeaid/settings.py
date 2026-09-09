@@ -26,13 +26,25 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
+
+# ALLOWED_HOSTS uses hostnames/wildcards without schemes
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '.onrender.com',
+    '.app.github.dev',  # Allows GitHub Codespaces forward URLs
+    '*',
+    "https://cautious-space-enigma-r4xgrv95jvg52wqv-8000.app.github.dev/",
 ]
 
+# CSRF_TRUSTED_ORIGINS MUST include https:// or http://
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.app.github.dev',
+    'https://*.onrender.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
 
+]
 # ============================================================
 # APPLICATIONS
 # ============================================================
@@ -44,6 +56,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'corsheaders',  # <--- Add this
 
     'rest_framework',
     'rest_framework_simplejwt',
@@ -57,12 +71,12 @@ INSTALLED_APPS = [
     'chat'
 ]
 
-
 # ============================================================
 # MIDDLEWARE
 # ============================================================
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # <--- Must be first!
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -72,7 +86,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
 
 # ============================================================
 # URL CONFIGURATION
