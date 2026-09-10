@@ -32,9 +32,8 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '.onrender.com',
-    '.app.github.dev',  # Allows GitHub Codespaces forward URLs
+    '.app.github.dev',
     '*',
-    "https://cautious-space-enigma-r4xgrv95jvg52wqv-8000.app.github.dev/",
 ]
 
 # CSRF_TRUSTED_ORIGINS MUST include https:// or http://
@@ -43,8 +42,17 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
-
 ]
+
+
+# ============================================================
+# CORS CONFIGURATION (Frontend Access)
+# ============================================================
+
+CORS_ALLOW_ALL_ORIGINS = True  # Allows mobile app & frontend web clients to communicate with API
+CORS_ALLOW_CREDENTIALS = True
+
+
 # ============================================================
 # APPLICATIONS
 # ============================================================
@@ -57,7 +65,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'corsheaders',  # <--- Add this
+    'corsheaders',
 
     'rest_framework',
     'rest_framework_simplejwt',
@@ -68,7 +76,7 @@ INSTALLED_APPS = [
     'providers',
     'bookings',
     'sos',
-    'chat'
+    'chat',
 ]
 
 # ============================================================
@@ -76,7 +84,7 @@ INSTALLED_APPS = [
 # ============================================================
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # <--- Must be first!
+    'corsheaders.middleware.CorsMiddleware',  # Must be first
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -125,19 +133,24 @@ WSGI_APPLICATION = 'homeaid.wsgi.application'
 # DATABASE
 # ============================================================
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=(
-            f"postgresql://"
-            f"{os.environ.get('DB_USER', 'postgres')}:"
-            f"{os.environ.get('DB_PASSWORD', '')}@"
-            f"{os.environ.get('DB_HOST', 'localhost')}:"
-            f"{os.environ.get('DB_PORT', '5432')}/"
-            f"{os.environ.get('DB_NAME', 'homeaid_db')}"
-        ),
-        conn_max_age=600,
-    )
-}
+# Check if running on Render
+if os.environ.get('RENDER'):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    # Use SQLite for local development so you never have password errors
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
 
 # ============================================================
 # PASSWORD VALIDATION
@@ -181,9 +194,6 @@ USE_TZ = True
 
 
 # ============================================================
-# STATIC FILES
-# ============================================================
-
 # STATIC FILES
 # ============================================================
 
@@ -243,3 +253,12 @@ AUTH_USER_MODEL = 'users.User'
 # ============================================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ============================================================
+# TERMII SMS CONFIGURATION
+# ============================================================
+
+TERMII_API_KEY = os.environ.get('TERMII_API_KEY', 'your_actual_termii_api_key')
+TERMII_SENDER_ID = os.environ.get('TERMII_SENDER_ID', 'N-ALERT')
+TERMII_BASE_URL = 'https://api.ng.termii.com/api'

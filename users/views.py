@@ -8,7 +8,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from drf_spectacular.utils import extend_schema
 
-from .otp import verify_otp
+from .otp import verify_otp, create_otp
+from .utils import send_termii_otp  # Import Termii helper function
 
 from .serializers import (
     RegisterSerializer,
@@ -44,6 +45,13 @@ class RegisterView(APIView):
         )
 
         user = serializer.save()
+
+        # Generate OTP and send via Termii SMS
+        try:
+            otp = create_otp(user)
+            send_termii_otp(user.phone_number, otp)
+        except Exception as error:
+            print(f"OTP Generation / Termii Error: {error}")
 
         return Response(
             {
@@ -200,8 +208,8 @@ class ResendOTPView(APIView):
 
         try:
 
-            from .otp import create_otp
             otp = create_otp(user)
+            send_termii_otp(user.phone_number, otp)
 
         except ValueError as error:
 
@@ -213,15 +221,11 @@ class ResendOTPView(APIView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS
             )
 
-        print(
-            f"OTP for {user.phone_number}: {otp}"
-        )
-
         return Response(
             {
                 "success": True,
                 "message": (
-                    "A new OTP has been generated."
+                    "A new OTP has been sent to your phone."
                 )
             },
             status=status.HTTP_200_OK
