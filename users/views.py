@@ -1,15 +1,15 @@
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from django.conf import settings
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from drf_spectacular.utils import extend_schema
 
 from .otp import verify_otp, create_otp
-from .utils import send_termii_otp  # Import Termii helper function
 
 from .serializers import (
     RegisterSerializer,
@@ -19,8 +19,20 @@ from .serializers import (
     UserProfileSerializer
 )
 
-
 User = get_user_model()
+
+
+# Helper function to dispatch OTP via Django SMTP
+def send_otp_email(user_email, otp_code):
+    subject = "Your HomeAid Connect Verification Code"
+    message = f"Hello,\n\nYour verification code is: {otp_code}\n\nThis code will expire shortly."
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user_email],
+        fail_silently=False,
+    )
 
 
 # ============================================================
@@ -46,19 +58,19 @@ class RegisterView(APIView):
 
         user = serializer.save()
 
-        # Generate OTP and send via Termii SMS
+        # Generate OTP and send via Email (SMTP)
         try:
             otp = create_otp(user)
-            send_termii_otp(user.phone_number, otp)
+            send_otp_email(user.email, otp)
         except Exception as error:
-            print(f"OTP Generation / Termii Error: {error}")
+            print(f"OTP Generation / Email Error: {error}")
 
         return Response(
             {
                 "success": True,
                 "message": (
                     "Registration successful. "
-                    "OTP sent to your phone."
+                    "OTP sent to your email address."
                 ),
                 "user": {
                     "id": user.id,
@@ -98,8 +110,8 @@ class VerifyOTPView(APIView):
             raise_exception=True
         )
 
-        phone_number = serializer.validated_data[
-            "phone_number"
+        email = serializer.validated_data[
+            "email"
         ]
 
         otp = serializer.validated_data[
@@ -109,7 +121,7 @@ class VerifyOTPView(APIView):
         try:
 
             user = User.objects.get(
-                phone_number=phone_number
+                email=email
             )
 
         except User.DoesNotExist:
@@ -119,7 +131,7 @@ class VerifyOTPView(APIView):
                     "success": False,
                     "message": (
                         "No user found with this "
-                        "phone number."
+                        "email address."
                     )
                 },
                 status=status.HTTP_404_NOT_FOUND
@@ -170,14 +182,14 @@ class ResendOTPView(APIView):
             raise_exception=True
         )
 
-        phone_number = serializer.validated_data[
-            "phone_number"
+        email = serializer.validated_data[
+            "email"
         ]
 
         try:
 
             user = User.objects.get(
-                phone_number=phone_number
+                email=email
             )
 
         except User.DoesNotExist:
@@ -187,20 +199,19 @@ class ResendOTPView(APIView):
                     "success": False,
                     "message": (
                         "No user found with this "
-                        "phone number."
+                        "email address."
                     )
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        if user.phone_verified:
+        if getattr(user, 'phone_verified', False):
 
             return Response(
                 {
                     "success": False,
                     "message": (
-                        "Phone number is already "
-                        "verified."
+                        "Account is already verified."
                     )
                 },
                 status=status.HTTP_400_BAD_REQUEST
@@ -209,7 +220,7 @@ class ResendOTPView(APIView):
         try:
 
             otp = create_otp(user)
-            send_termii_otp(user.phone_number, otp)
+            send_otp_email(user.email, otp)
 
         except ValueError as error:
 
@@ -225,7 +236,7 @@ class ResendOTPView(APIView):
             {
                 "success": True,
                 "message": (
-                    "A new OTP has been sent to your phone."
+                    "A new OTP has been sent to your email."
                 )
             },
             status=status.HTTP_200_OK

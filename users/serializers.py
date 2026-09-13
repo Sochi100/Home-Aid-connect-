@@ -110,15 +110,11 @@ class RegisterSerializer(serializers.ModelSerializer):
             **validated_data
         )
 
-        otp = create_otp(user)
-
-        print(f"OTP for {user.phone_number}: {otp}")
-
         return user
 
 
 class VerifyOTPSerializer(serializers.Serializer):
-    phone_number = serializers.CharField()
+    email = serializers.EmailField()
     otp = serializers.CharField(
         min_length=6,
         max_length=6
@@ -134,51 +130,34 @@ class VerifyOTPSerializer(serializers.Serializer):
 
 
 class ResendOTPSerializer(serializers.Serializer):
-    phone_number = serializers.CharField()
-
-    def validate_phone_number(self, value):
-        if not value.startswith("+234"):
-            raise serializers.ValidationError(
-                "Phone number must start with +234."
-            )
-
-        if len(value) != 14:
-            raise serializers.ValidationError(
-                "Enter a valid Nigerian phone number."
-            )
-
-        if not value[1:].isdigit():
-            raise serializers.ValidationError(
-                "Phone number must contain numbers only."
-            )
-
-        return value
+    email = serializers.EmailField()
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    phone_number = serializers.CharField()
     password = serializers.CharField(
         write_only=True,
         max_length=20
     )
 
     def validate(self, attrs):
-        username = attrs.get("username")
+        phone_number = attrs.get("phone_number")
         password = attrs.get("password")
 
         user = authenticate(
-            username=username,
+            username=phone_number,  # Authenticates via custom User model
             password=password
         )
 
         if user is None:
             raise serializers.ValidationError(
-                "Invalid username or password."
+                "Invalid phone number or password."
             )
 
-        if not user.phone_verified:
+        # Update attribute if your model uses a different flag (e.g. is_verified)
+        if hasattr(user, 'phone_verified') and not user.phone_verified:
             raise serializers.ValidationError(
-                "Please verify your phone number before logging in."
+                "Please verify your email address before logging in."
             )
 
         attrs["user"] = user

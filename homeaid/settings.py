@@ -26,7 +26,6 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-
 # ALLOWED_HOSTS uses hostnames/wildcards without schemes
 ALLOWED_HOSTS = [
     'localhost',
@@ -206,7 +205,7 @@ STATICFILES_STORAGE = (
 
 
 # ============================================================
-# EMAIL
+# EMAIL BACKEND
 # ============================================================
 
 EMAIL_BACKEND = (
@@ -259,6 +258,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # TERMII SMS CONFIGURATION
 # ============================================================
 
-TERMII_API_KEY = os.environ.get('TERMII_API_KEY', 'your_actual_termii_api_key')
+TERMII_API_KEY = os.environ.get('TERMII_API_KEY', '')
 TERMII_SENDER_ID = os.environ.get('TERMII_SENDER_ID', 'N-ALERT')
-TERMII_BASE_URL = 'https://api.ng.termii.com/api'
+TERMII_BASE_URL = os.environ.get('TERMII_BASE_URL', 'https://api.ng.termii.com/api')
+
+# ============================================================
+# EMAIL CONFIGURATION (SMTP)
+# ============================================================
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'kenechukwuokpalaoka@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'chmv wwgt jamx elpi')
+DEFAULT_FROM_EMAIL = f"HomeAid Connect <{os.environ.get('EMAIL_HOST_USER', 'your-email@gmail.com')}>"
