@@ -269,7 +269,9 @@ TERMII_BASE_URL = os.environ.get('TERMII_BASE_URL', 'https://api.ng.termii.com/a
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'kenechukwuokpalaoka@gmail.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'chmv wwgt jamx elpi')
-DEFAULT_FROM_EMAIL = f"HomeAid Connect <{os.environ.get('EMAIL_HOST_USER', 'your-email@gmail.com')}>"
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'chmvwwgtjamxelpi')
+
+_email_user = os.environ.get('EMAIL_HOST_USER', 'kenechukwuokpalaoka@gmail.com')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', f"HomeAid Connect <{_email_user}>")
