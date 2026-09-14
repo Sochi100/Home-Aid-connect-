@@ -205,15 +205,6 @@ STATICFILES_STORAGE = (
 
 
 # ============================================================
-# EMAIL BACKEND
-# ============================================================
-
-EMAIL_BACKEND = (
-    'django.core.mail.backends.console.EmailBackend'
-)
-
-
-# ============================================================
 # DJANGO REST FRAMEWORK
 # ============================================================
 
@@ -261,6 +252,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TERMII_API_KEY = os.environ.get('TERMII_API_KEY', '')
 TERMII_SENDER_ID = os.environ.get('TERMII_SENDER_ID', 'N-ALERT')
 TERMII_BASE_URL = os.environ.get('TERMII_BASE_URL', 'https://api.ng.termii.com/api')
+
 
 # ============================================================
 # EMAIL CONFIGURATION (SMTP)
