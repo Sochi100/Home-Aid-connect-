@@ -1,5 +1,6 @@
+import logging
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
+from django.core.mail import get_connection, send_mail
 from django.conf import settings
 
 from rest_framework import generics, permissions, status
@@ -20,17 +21,26 @@ from .serializers import (
 )
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
-# Helper function to dispatch OTP via Django SMTP
+# Helper function to dispatch OTP via Django SMTP with timeout protection
 def send_otp_email(user_email, otp_code):
     subject = "Your HomeAid Connect Verification Code"
     message = f"Hello,\n\nYour verification code is: {otp_code}\n\nThis code will expire shortly."
+
+    # Force a 10-second timeout connection to prevent Gunicorn worker hanging
+    connection = get_connection(
+        backend=settings.EMAIL_BACKEND,
+        timeout=10,
+    )
+
     send_mail(
         subject=subject,
         message=message,
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[user_email],
+        connection=connection,
         fail_silently=False,
     )
 
@@ -63,7 +73,7 @@ class RegisterView(APIView):
             otp = create_otp(user)
             send_otp_email(user.email, otp)
         except Exception as error:
-            print(f"OTP Generation / Email Error: {error}")
+            logger.error(f"OTP Generation / Email Error during Registration for {user.email}: {error}")
 
         return Response(
             {
@@ -143,7 +153,6 @@ class VerifyOTPView(APIView):
         )
 
         if not success:
-
             return Response(
                 {
                     "success": False,
@@ -206,7 +215,6 @@ class ResendOTPView(APIView):
             )
 
         if getattr(user, 'phone_verified', False):
-
             return Response(
                 {
                     "success": False,
@@ -217,19 +225,29 @@ class ResendOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Generate OTP
         try:
-
             otp = create_otp(user)
-            send_otp_email(user.email, otp)
-
         except ValueError as error:
-
             return Response(
                 {
                     "success": False,
                     "message": str(error)
                 },
                 status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
+        # Dispatch Email via SMTP with error handling
+        try:
+            send_otp_email(user.email, otp)
+        except Exception as error:
+            logger.error(f"SMTP Dispatch Error for {user.email}: {error}")
+            return Response(
+                {
+                    "success": False,
+                    "message": "OTP generated, but email server connection timed out. Please try again."
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
 
         return Response(
@@ -255,7 +273,6 @@ class ResendOTPView(APIView):
 class LoginView(APIView):
 
     def post(self, request):
-
         serializer = LoginSerializer(
             data=request.data
         )
