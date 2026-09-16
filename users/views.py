@@ -3,12 +3,12 @@ from django.contrib.auth import get_user_model
 from django.core.mail import get_connection, send_mail
 from django.conf import settings
 
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from rest_framework_simplejwt.tokens import RefreshToken
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, inline_serializer
 
 from .otp import verify_otp, create_otp
 
@@ -267,6 +267,24 @@ class ResendOTPView(APIView):
 
 @extend_schema(
     request=LoginSerializer,
+    responses={
+        200: inline_serializer(
+            name="LoginSuccessResponse",
+            fields={
+                "success": serializers.BooleanField(default=True),
+                "message": serializers.CharField(default="Login successful."),
+                "user": serializers.DictField(),
+                "tokens": serializers.DictField(),
+            }
+        ),
+        400: inline_serializer(
+            name="LoginErrorResponse",
+            fields={
+                "success": serializers.BooleanField(default=False),
+                "message": serializers.CharField(default="Invalid email address or password."),
+            }
+        )
+    },
     auth=[],
     tags=["Authentication"]
 )
