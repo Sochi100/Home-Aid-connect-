@@ -134,27 +134,27 @@ class ResendOTPSerializer(serializers.Serializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    phone_number = serializers.CharField()
+    email = serializers.EmailField()
     password = serializers.CharField(
         write_only=True,
         max_length=20
     )
 
     def validate(self, attrs):
-        phone_number = attrs.get("phone_number")
+        email = attrs.get("email")
         password = attrs.get("password")
 
+        # Pass email to Django authenticate (uses USERNAME_FIELD='email' on custom User model)
         user = authenticate(
-            username=phone_number,  # Authenticates via custom User model
+            username=email,
             password=password
         )
 
         if user is None:
             raise serializers.ValidationError(
-                "Invalid phone number or password."
+                "Invalid email address or password."
             )
 
-        # Update attribute if your model uses a different flag (e.g. is_verified)
         if hasattr(user, 'phone_verified') and not user.phone_verified:
             raise serializers.ValidationError(
                 "Please verify your email address before logging in."
