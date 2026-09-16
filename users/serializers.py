@@ -25,40 +25,12 @@ class RegisterSerializer(serializers.ModelSerializer):
             "email",
             "password",
             "password_confirm",
-            "first_name",
-            "last_name",
             "phone_number",
             "role",
             "gender",
             "location",
             "date_of_birth",
         ]
-
-    def validate_first_name(self, value):
-        if not value.isalpha():
-            raise serializers.ValidationError(
-                "First name must contain letters only."
-            )
-
-        if len(value) > 30:
-            raise serializers.ValidationError(
-                "First name cannot exceed 30 characters."
-            )
-
-        return value
-
-    def validate_last_name(self, value):
-        if not value.isalpha():
-            raise serializers.ValidationError(
-                "Last name must contain letters only."
-            )
-
-        if len(value) > 30:
-            raise serializers.ValidationError(
-                "Last name cannot exceed 30 characters."
-            )
-
-        return value
 
     def validate_email(self, value):
         value = value.lower()
@@ -144,9 +116,11 @@ class LoginSerializer(serializers.Serializer):
         email = attrs.get("email")
         password = attrs.get("password")
 
-        # Pass email to Django authenticate (uses USERNAME_FIELD='email' on custom User model)
+        u_usernname = User.objects.filter(email=email).first()
+        u_user = u_usernname.username if u_usernname else None
+
         user = authenticate(
-            username=email,
+            username=u_user,
             password=password
         )
 
